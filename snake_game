@@ -1,136 +1,15 @@
-import pygame
-import time
-import random
-
-pygame.init()
-
-# 画面のサイズ (16マス x 16マス)
-cell_size = 40
-grid_size = 16
-display_width = cell_size * grid_size
-display_height = cell_size * grid_size
-
-# 色の定義
-black = (0, 0, 0)
-white = (255, 255, 255)
-red = (213, 50, 80)
-green = (0, 255, 0)
-blue = (50, 153, 213)
-purple = (128, 0, 128)  # 紫色
-
-# ゲーム画面の設定
-dis = pygame.display.set_mode((display_width, display_height))
-pygame.display.set_caption('ヘビゲーム')
-
-# クロックオブジェクト
-clock = pygame.time.Clock()
-
-snake_speed = 10  # スピードを落とす
-
-# フォントの設定
-font_style = pygame.font.SysFont("bahnschrift", 25)
-score_font = pygame.font.SysFont("comicsansms", 35)
-
-# スコアの表示
-def Your_score(score):
-    value = score_font.render("Your Score: " + str(score), True, black)
-    dis.blit(value, [0, 0])
-
-# ヘビの形を描く
-def our_snake(cell_size, snake_list):
-    for x in snake_list:
-        pygame.draw.rect(dis, purple, [x[0], x[1], cell_size, cell_size])
-    # ヘビの先頭に目を描く
-    head = snake_list[-1]
-    eye_size = cell_size // 5
-    pygame.draw.circle(dis, black, (head[0] + eye_size, head[1] + eye_size), eye_size)
-    pygame.draw.circle(dis, black, (head[0] + cell_size - eye_size * 2, head[1] + eye_size), eye_size)
-
-# メッセージを表示
-def message(msg, color):
-    mesg = font_style.render(msg, True, color)
-    dis.blit(mesg, [display_width / 6, display_height / 3])
-
-# ゲームループ
-def gameLoop():
-    game_over = False
-    game_close = False
-
-    x1 = display_width / 2
-    y1 = display_height / 2
-
-    x1_change = 0
-    y1_change = 0
-
-    snake_List = []
-    Length_of_snake = 1
-
-    foodx = round(random.randrange(0, display_width - cell_size) / cell_size) * cell_size
-    foody = round(random.randrange(0, display_height - cell_size) / cell_size) * cell_size
-
-    while not game_over:
-
-        while game_close == True:
-            dis.fill(blue)
-            message("You Lost! Press Q-Quit or C-Play Again", red)
-            Your_score(Length_of_snake - 1)
-            pygame.display.update()
-
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        game_over = True
-                        game_close = False
-                    if event.key == pygame.K_c:
-                        gameLoop()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x1_change = -cell_size
-                    y1_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x1_change = cell_size
-                    y1_change = 0
-                elif event.key == pygame.K_UP:
-                    y1_change = -cell_size
-                    x1_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y1_change = cell_size
-                    x1_change = 0
-
-        if x1 >= display_width or x1 < 0 or y1 >= display_height or y1 < 0:
-            game_close = True
-        x1 += x1_change
-        y1 += y1_change
-        dis.fill(blue)
-        pygame.draw.rect(dis, green, [foodx, foody, cell_size, cell_size])
-        snake_Head = []
-        snake_Head.append(x1)
-        snake_Head.append(y1)
-        snake_List.append(snake_Head)
-        if len(snake_List) > Length_of_snake:
-            del snake_List[0]
-
-        for x in snake_List[:-1]:
-            if x == snake_Head:
-                game_close = True
-
-        our_snake(cell_size, snake_List)
-        Your_score(Length_of_snake - 1)
-
-        pygame.display.update()
-
-        if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, display_width - cell_size) / cell_size) * cell_size
-            foody = round(random.randrange(0, display_height - cell_size) / cell_size) * cell_size
-            Length_of_snake += 1
-
-        clock.tick(snake_speed)
-
-    pygame.quit()
-    quit()
-
-gameLoop()
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="gameArea">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
