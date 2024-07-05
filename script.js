@@ -1,100 +1,118 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const grid = 16;
-let count = 0;
-
-let snake = {
-    x: 160,
-    y: 160,
-    dx: grid,
-    dy: 0,
-    cells: [],
-    maxCells: 4
+const config = {
+    type: Phaser.AUTO,
+    width: 640,
+    height: 640,
+    backgroundColor: '#5DACD8',
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
 };
 
-let apple = {
-    x: 320,
-    y: 320
-};
+const game = new Phaser.Game(config);
 
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
+let snake;
+let food;
+let cursors;
+let score = 0;
+let scoreText;
+let direction = 'RIGHT';
+const gridSize = 40;
+
+function preload() {
+    this.load.image('food', 'https://examples.phaser.io/assets/sprites/apple.png');
+    this.load.image('body', 'https://examples.phaser.io/assets/sprites/block.png');
 }
 
-function loop() {
-    requestAnimationFrame(loop);
+function create() {
+    snake = this.physics.add.group();
 
-    if (++count < 4) {
-        return;
+    let initialX = config.width / 2;
+    let initialY = config.height / 2;
+
+    for (let i = 0; i < 4; i++) {
+        snake.create(initialX - i * gridSize, initialY, 'body');
     }
 
-    count = 0;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    food = this.physics.add.image(getRandomCoord(config.width), getRandomCoord(config.height), 'food');
 
-    snake.x += snake.dx;
-    snake.y += snake.dy;
+    this.physics.add.collider(snake, food, eatFood, null, this);
 
-    if (snake.x < 0) {
-        snake.x = canvas.width - grid;
-    } else if (snake.x >= canvas.width) {
-        snake.x = 0;
+    cursors = this.input.keyboard.createCursorKeys();
+
+    scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '20px', fill: '#fff' });
+
+    this.time.addEvent({ delay: 100, callback: moveSnake, callbackScope: this, loop: true });
+}
+
+function update() {
+    if (cursors.left.isDown && direction !== 'RIGHT') {
+        direction = 'LEFT';
+    } else if (cursors.right.isDown && direction !== 'LEFT') {
+        direction = 'RIGHT';
+    } else if (cursors.up.isDown && direction !== 'DOWN') {
+        direction = 'UP';
+    } else if (cursors.down.isDown && direction !== 'UP') {
+        direction = 'DOWN';
+    }
+}
+
+function moveSnake() {
+    let head = snake.getFirst(true);
+    let newHead;
+
+    switch (direction) {
+        case 'LEFT':
+            newHead = snake.create(head.x - gridSize, head.y, 'body');
+            break;
+        case 'RIGHT':
+            newHead = snake.create(head.x + gridSize, head.y, 'body');
+            break;
+        case 'UP':
+            newHead = snake.create(head.x, head.y - gridSize, 'body');
+            break;
+        case 'DOWN':
+            newHead = snake.create(head.x, head.y + gridSize, 'body');
+            break;
     }
 
-    if (snake.y < 0) {
-        snake.y = canvas.height - grid;
-    } else if (snake.y >= canvas.height) {
-        snake.y = 0;
+    if (newHead) {
+        newHead.setOrigin(0);
+        let tail = snake.getLast(true);
+        tail.destroy();
     }
 
-    snake.cells.unshift({ x: snake.x, y: snake.y });
-
-    if (snake.cells.length > snake.maxCells) {
-        snake.cells.pop();
+    if (newHead.x < 0 || newHead.x >= config.width || newHead.y < 0 || newHead.y >= config.height) {
+        this.scene.restart();
+        score = 0;
+        scoreText.setText('Score: ' + score);
     }
 
-    ctx.fillStyle = 'red';
-    ctx.fillRect(apple.x, apple.y, grid - 1, grid - 1);
-
-    ctx.fillStyle = 'green';
-    snake.cells.forEach(function (cell, index) {
-        ctx.fillRect(cell.x, cell.y, grid - 1, grid - 1);
-
-        if (cell.x === apple.x && cell.y === apple.y) {
-            snake.maxCells++;
-            apple.x = getRandomInt(0, 25) * grid;
-            apple.y = getRandomInt(0, 25) * grid;
-        }
-
-        for (let i = index + 1; i < snake.cells.length; i++) {
-            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                snake.x = 160;
-                snake.y = 160;
-                snake.cells = [];
-                snake.maxCells = 4;
-                snake.dx = grid;
-                snake.dy = 0;
-                apple.x = getRandomInt(0, 25) * grid;
-                apple.y = getRandomInt(0, 25) * grid;
-            }
+    snake.getChildren().forEach((segment, index) => {
+        if (index > 0 && segment.x === newHead.x && segment.y === newHead.y) {
+            this.scene.restart();
+            score = 0;
+            scoreText.setText('Score: ' + score);
         }
     });
 }
 
-document.addEventListener('keydown', function (e) {
-    if (e.which === 37 && snake.dx === 0) {
-        snake.dx = -grid;
-        snake.dy = 0;
-    } else if (e.which === 38 && snake.dy === 0) {
-        snake.dy = -grid;
-        snake.dx = 0;
-    } else if (e.which === 39 && snake.dx === 0) {
-        snake.dx = grid;
-        snake.dy = 0;
-    } else if (e.which === 40 && snake.dy === 0) {
-        snake.dy = grid;
-        snake.dx = 0;
-    }
-});
+function eatFood(snake, food) {
+    food.setPosition(getRandomCoord(config.width), getRandomCoord(config.height));
+    score += 10;
+    scoreText.setText('Score: ' + score);
 
-requestAnimationFrame(loop);
+    let tail = snake.getLast(true);
+    snake.create(tail.x, tail.y, 'body');
+}
+
+function getRandomCoord(size) {
+    return Math.floor(Math.random() * (size / gridSize)) * gridSize;
+}
